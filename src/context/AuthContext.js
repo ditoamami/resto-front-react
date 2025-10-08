@@ -1,45 +1,30 @@
-import React, { createContext, useState, useEffect } from 'react';
-import axiosClient from '../api/axiosClient';
+import React, { createContext, useState } from "react";
 
 export const AuthContext = createContext();
 
-export function AuthProvider({ children }) {
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
+export const AuthProvider = ({ children }) => {
+  const [user, setUser] = useState(
+    JSON.parse(localStorage.getItem("user")) || null
+  );
+  const [token, setToken] = useState(localStorage.getItem("token") || null);
 
-  useEffect(()=>{
-    // try to fetch current user (optional: endpoint /user)
-    const loadUser = async ()=>{
-      try {
-        const res = await axiosClient.get('/user');
-        setUser(res.data);
-      } catch (err) {
-        setUser(null);
-      } finally {
-        setLoading(false);
-      }
-    };
-    loadUser();
-  },[]);
-
-  const login = async (email, password) => {
-    // Example login for Sanctum: fetch CSRF cookie first
-    await axiosClient.get('/sanctum/csrf-cookie');
-    const res = await axiosClient.post('/login', { email, password });
-    // After login, you may GET /user to retrieve info
-    const userRes = await axiosClient.get('/user');
-    setUser(userRes.data);
-    return res;
+  const login = (data) => {
+    localStorage.setItem("token", data.token);
+    localStorage.setItem("user", JSON.stringify(data.user));
+    setUser(data.user);
+    setToken(data.token);
   };
 
-  const logout = async ()=>{
-    await axiosClient.post('/logout');
+  const logout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
     setUser(null);
+    setToken(null);
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout }}>
+    <AuthContext.Provider value={{ user, token, login, logout }}>
       {children}
     </AuthContext.Provider>
   );
-}
+};
