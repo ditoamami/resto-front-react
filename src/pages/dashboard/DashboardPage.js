@@ -1,53 +1,82 @@
 import React, { useEffect, useState } from 'react';
-import { Box, Grid, Container, TextField, Button, Typography } from '@mui/material';
+import { Box, Grid, Container, TextField, Button, Typography, CircularProgress } from '@mui/material';
 import TableCard from '../../components/TableCard';
 import StatCard from '../../components/StatCard';
-import axiosClient from '../../api/axiosClient';
+import axiosPrivate from '../../api/axiosPrivate';
+import OrderDialog from '../../components/OrderDialog';
 
-export default function DashboardPage(){
+export default function DashboardPage() {
   const [tables, setTables] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState('');
+  const [selectedTable, setSelectedTable] = useState(null);
 
-  useEffect(()=>{
-    const fetch = async ()=>{
-      try {
-        const res = await axiosClient.get('/tables');
-        // expect res.data to be array of {id, status}
-        setTables(res.data);
-      } catch (err) {
-        // fallback sample
-        setTables(Array.from({length:24}, (_,i)=>({id:i+1, status:['available','occupied','reserved','inactive'][Math.floor(Math.random()*4)]})));
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetch();
+  const fetchTables = async () => {
+    try {
+      const res = await axiosPrivate.get('/tables');
+      setTables(res.data);
+    } catch (err) {
+      console.error('Error fetching tables:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchTables();
   }, []);
 
-  const countBy = (status) => tables.filter(t=>t.status===status).length;
+  const handleOpenOrder = (table) => {
+    setSelectedTable(table);
+  };
+
+  const handleCloseOrder = async (refresh = false) => {
+    setSelectedTable(null);
+    if (refresh) await fetchTables();
+  };
+
+  const filteredTables = tables.filter(t =>
+    t.name.toLowerCase().includes(search.toLowerCase())
+  );
+
+  const countBy = (status) => tables.filter(t => t.status === status).length;
 
   return (
-    <Container maxWidth="lg" sx={{ mt:4 }}>
-      <Box sx={{ display:'flex', justifyContent:'space-between', alignItems:'center', mb:2 }}>
+    <Container maxWidth="lg" sx={{ mt: 4 }}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
         <Typography variant="h5">Dashboard / Table List</Typography>
-        <Box sx={{ display:'flex', gap:1 }}>
-          <Button variant="outlined">Floor Plan</Button>
-          <Button variant="outlined">List View</Button>
-        </Box>
       </Box>
 
       <Grid container spacing={2}>
         <Grid item xs={12} md={9}>
-          <Box sx={{ mb:2 }}>
-            <TextField placeholder="Search table..." size="small" fullWidth />
+          <Box sx={{ mb: 2 }}>
+            <TextField
+              placeholder="Search table..."
+              size="small"
+              fullWidth
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
           </Box>
-          <Grid container spacing={2}>
-            {tables.map(t => (
-              <Grid item xs={6} sm={4} md={2} key={t.id}>
-                <TableCard id={t.id} status={t.status} />
-              </Grid>
-            ))}
-          </Grid>
+
+          {loading ? (
+            <Box sx={{ textAlign: 'center', mt: 4 }}>
+              <CircularProgress />
+            </Box>
+          ) : (
+            <Grid container spacing={2}>
+              {filteredTables.map((t) => (
+                <Grid item xs={6} sm={4} md={2.4} key={t.id}>
+                  <TableCard
+                    name={t.name}
+                    status={t.status}
+                    capacity={t.capacity}
+                    onClick={() => handleOpenOrder(t)}
+                  />
+                </Grid>
+              ))}
+            </Grid>
+          )}
         </Grid>
 
         <Grid item xs={12} md={3}>
@@ -57,6 +86,14 @@ export default function DashboardPage(){
           <StatCard label="Inactive Tables" value={countBy('inactive')} />
         </Grid>
       </Grid>
+
+      {selectedTable && (
+        <OrderDialog
+          open={!!selectedTable}
+          table={selectedTable}
+          onClose={handleCloseOrder}
+        />
+      )}
     </Container>
   );
 }

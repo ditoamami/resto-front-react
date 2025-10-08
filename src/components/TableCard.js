@@ -1,20 +1,40 @@
 import React from 'react';
 import { Card, CardContent, Typography } from '@mui/material';
 
-export default function TableCard({ id, status, onClick }){
-  const colorMap = {
-    available: '#16a34a',
-    occupied: '#dc2626',
-    reserved: '#f59e0b',
-    inactive: '#6b7280'
+export default function TableCard({ name, status, capacity, onClick }) {
+  const getStatusColor = () => {
+    switch (status) {
+      case 'available': return 'success.main';
+      case 'occupied': return 'error.main';
+      case 'reserved': return 'warning.main';
+      case 'inactive': return 'text.disabled';
+      default: return 'text.primary';
+    }
   };
-  const bg = colorMap[status] || '#94a3b8';
 
   return (
-    <Card onClick={()=>onClick && onClick(id)} sx={{ bgcolor: bg, color:'#fff', cursor:'pointer' }}>
-      <CardContent sx={{ textAlign:'center', py:4 }}>
-        <Typography variant="h5" component="div" fontWeight={700}>Table {id}</Typography>
-        <Typography variant="body2" sx={{ opacity:0.9 }}>{status}</Typography>
+    <Card
+      sx={{
+        textAlign: 'center',
+        p: 1.5,
+        borderRadius: 2,
+        boxShadow: 2,
+        cursor: status === 'inactive' ? 'not-allowed' : 'pointer',
+        opacity: status === 'inactive' ? 0.6 : 1,
+        '&:hover': { boxShadow: 4 },
+      }}
+      onClick={status !== 'inactive' ? onClick : undefined}
+    >
+      <CardContent>
+        <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+          {name}
+        </Typography>
+        <Typography variant="body2" color={getStatusColor()} sx={{ mb: 0.5 }}>
+          {status.charAt(0).toUpperCase() + status.slice(1)}
+        </Typography>
+        <Typography variant="caption" color="text.secondary">
+          Capacity: {capacity}
+        </Typography>
       </CardContent>
     </Card>
   );
