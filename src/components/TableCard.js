@@ -1,5 +1,5 @@
 import React from 'react';
-import { Card, CardContent, Typography } from '@mui/material';
+import { Card, CardContent, Typography, Box } from '@mui/material';
 
 export default function TableCard({ name, status, capacity, onClick }) {
   const getStatusColor = () => {
@@ -12,29 +12,68 @@ export default function TableCard({ name, status, capacity, onClick }) {
     }
   };
 
+  const getBackgroundColor = () => {
+    switch (status) {
+      case 'available': return 'success.light';
+      case 'occupied': return 'error.light';
+      case 'reserved': return 'warning.light';
+      case 'inactive': return 'grey.200';
+      default: return 'background.paper';
+    }
+  };
+
   return (
     <Card
       sx={{
         textAlign: 'center',
-        p: 1.5,
-        borderRadius: 2,
-        boxShadow: 2,
+        p: 2,
+        borderRadius: 3,
+        boxShadow: 3,
         cursor: status === 'inactive' ? 'not-allowed' : 'pointer',
         opacity: status === 'inactive' ? 0.6 : 1,
-        '&:hover': { boxShadow: 4 },
+        backgroundColor: getBackgroundColor(),
+        border: `2px solid ${getStatusColor()}`,
+        transition: 'all 0.2s ease-in-out',
+        '&:hover': {
+          boxShadow: 6,
+          transform: status !== 'inactive' ? 'scale(1.03)' : 'none',
+        },
       }}
       onClick={status !== 'inactive' ? onClick : undefined}
     >
       <CardContent>
-        <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+        {/* Badge kecil di atas */}
+        <Box
+          sx={{
+            width: 14,
+            height: 14,
+            borderRadius: '50%',
+            backgroundColor: getStatusColor(),
+            mx: 'auto',
+            mb: 1.5,
+          }}
+        />
+        <Typography
+          variant="h6"
+          sx={{ fontWeight: 700, color: 'text.primary', mb: 0.5 }}
+        >
           {name}
         </Typography>
-        <Typography variant="body2" color={getStatusColor()} sx={{ mb: 0.5 }}>
-          {status
-            ? status.charAt(0).toUpperCase() + status.slice(1)
-            : 'Unknown'}
+        <Typography
+          variant="subtitle1"
+          sx={{
+            fontWeight: 600,
+            color: 'text.primary',
+            mb: 0.75,
+            fontSize: '1rem',
+          }}
+        >
+          {status ? status.charAt(0).toUpperCase() + status.slice(1) : 'Unknown'}
         </Typography>
-        <Typography variant="caption" color="text.secondary">
+        <Typography
+          variant="body2"
+          sx={{ color: 'text.secondary', fontSize: '0.95rem' }}
+        >
           Capacity: {capacity}
         </Typography>
       </CardContent>

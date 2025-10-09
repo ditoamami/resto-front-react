@@ -10,6 +10,7 @@ import {
   Stack,
 } from "@mui/material";
 import axiosPrivate from "../../api/axiosPrivate";
+import { formatRupiah } from "../../utils/string";
 
 export default function MenuFormDialog({ open, onClose, onSuccess, menu }) {
   const [form, setForm] = useState({
@@ -78,11 +79,14 @@ export default function MenuFormDialog({ open, onClose, onSuccess, menu }) {
           <TextField
             label="Price"
             name="price"
-            value={form.price}
-            onChange={handleChange}
+            value={form.price ? formatRupiah(form.price) : ""} // tampilkan format rupiah
+            onChange={(e) => {
+              // hapus semua karakter kecuali angka
+              const onlyNumber = e.target.value.replace(/[^0-9]/g, "");
+              setForm({ ...form, price: parseInt(onlyNumber || "0") });
+            }}
             fullWidth
             required
-            type="number"
           />
           <TextField
             select
