@@ -14,7 +14,7 @@ import {
 } from "@mui/material";
 import { Edit, Delete } from "@mui/icons-material";
 import axiosPrivate from "../../api/axiosPrivate";
-import { capitalizeFirst } from "../../utils/string";
+import { capitalizeFirst, formatRupiah } from "../../utils/string";
 import MenuFormDialog from './MenuFormDialog';
 
 export default function MenuListPage() {
@@ -95,7 +95,7 @@ export default function MenuListPage() {
                 <TableCell>{index + 1}</TableCell>
                 <TableCell>{menu.name}</TableCell>
                 <TableCell>{capitalizeFirst(menu.category)}</TableCell>
-                <TableCell>Rp {menu.price.toLocaleString()}</TableCell>
+                <TableCell>{formatRupiah(menu.price)}</TableCell>
                 <TableCell>
                   <IconButton
                     color="primary"
