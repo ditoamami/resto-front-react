@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Dialog,
   DialogTitle,
@@ -11,13 +11,30 @@ import {
 } from "@mui/material";
 import axiosPrivate from "../../api/axiosPrivate";
 
-export default function MenuFormDialog({ open, onClose, onSuccess }) {
+export default function MenuFormDialog({ open, onClose, onSuccess, menu }) {
   const [form, setForm] = useState({
     name: "",
     price: "",
     category: "",
   });
   const [loading, setLoading] = useState(false);
+
+  // Jika ada menu (update), set form sesuai data menu
+  useEffect(() => {
+    if (menu) {
+      setForm({
+        name: menu.name || "",
+        price: menu.price || "",
+        category: menu.category || "",
+      });
+    } else {
+      setForm({
+        name: "",
+        price: "",
+        category: "",
+      });
+    }
+  }, [menu, open]);
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -26,12 +43,20 @@ export default function MenuFormDialog({ open, onClose, onSuccess }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
+
     try {
-      await axiosPrivate.post("/menus", form);
-      onSuccess(); // Refresh list
-      onClose(); // Close modal
+      if (menu) {
+        // 🔹 Update menu
+        await axiosPrivate.put(`/menus/${menu.id}`, form);
+      } else {
+        // 🔹 Create menu
+        await axiosPrivate.post("/menus", form);
+      }
+      onSuccess(); 
+      onClose(); 
     } catch (err) {
-      console.error("Error adding menu:", err);
+      console.error("Error saving menu:", err);
+      alert("Gagal menyimpan menu");
     } finally {
       setLoading(false);
     }
@@ -39,7 +64,7 @@ export default function MenuFormDialog({ open, onClose, onSuccess }) {
 
   return (
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
-      <DialogTitle>Add New Menu</DialogTitle>
+      <DialogTitle>{menu ? "Update Menu" : "Add New Menu"}</DialogTitle>
       <DialogContent>
         <Stack spacing={2} sx={{ mt: 1 }}>
           <TextField
@@ -83,7 +108,7 @@ export default function MenuFormDialog({ open, onClose, onSuccess }) {
           variant="contained"
           disabled={loading}
         >
-          {loading ? "Saving..." : "Save"}
+          {loading ? "Saving..." : menu ? "Update" : "Save"}
         </Button>
       </DialogActions>
     </Dialog>

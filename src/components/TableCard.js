@@ -30,7 +30,9 @@ export default function TableCard({ name, status, capacity, onClick }) {
           {name}
         </Typography>
         <Typography variant="body2" color={getStatusColor()} sx={{ mb: 0.5 }}>
-          {status.charAt(0).toUpperCase() + status.slice(1)}
+          {status
+            ? status.charAt(0).toUpperCase() + status.slice(1)
+            : 'Unknown'}
         </Typography>
         <Typography variant="caption" color="text.secondary">
           Capacity: {capacity}

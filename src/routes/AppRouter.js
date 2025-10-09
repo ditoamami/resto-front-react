@@ -4,6 +4,7 @@ import DashboardPage from '../pages/dashboard/DashboardPage';
 import LoginPage from '../pages/auth/LoginPage';
 import MenuListPage from '../pages/menu/MenuListPage';
 import OrderListPage from '../pages/order/OrderListPage';
+import OrderDetailPage from '../pages/order/OrderDetailPage';
 import PaymentPage from '../pages/payment/PaymentPage';
 import NotFound from '../pages/notfound/NotFound';
 import Header from '../components/Layout/Header';
@@ -55,6 +56,15 @@ function AppContent() {
               element={
                 <PrivateRoute>
                   <PaymentPage />
+                </PrivateRoute>
+              }
+            />
+
+            <Route
+              path="/orders/:id"
+              element={
+                <PrivateRoute>
+                  <OrderDetailPage />
                 </PrivateRoute>
               }
             />

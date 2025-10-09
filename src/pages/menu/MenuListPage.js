@@ -10,7 +10,9 @@ import {
   TableHead,
   TableRow,
   Paper,
+  IconButton,
 } from "@mui/material";
+import { Edit, Delete } from "@mui/icons-material";
 import axiosPrivate from "../../api/axiosPrivate";
 import { capitalizeFirst } from "../../utils/string";
 import MenuFormDialog from './MenuFormDialog';
@@ -18,6 +20,7 @@ import MenuFormDialog from './MenuFormDialog';
 export default function MenuListPage() {
   const [menus, setMenus] = useState([]);
   const [open, setOpen] = useState(false);
+  const [selectedMenu, setSelectedMenu] = useState(null); // untuk update
 
   const fetchMenus = async () => {
     try {
@@ -31,6 +34,30 @@ export default function MenuListPage() {
   useEffect(() => {
     fetchMenus();
   }, []);
+
+  /** 🔹 Delete Menu */
+  const handleDelete = async (id) => {
+    if (!window.confirm("Yakin ingin menghapus menu ini?")) return;
+    try {
+      await axiosPrivate.delete(`/menus/${id}`);
+      fetchMenus(); // refresh list
+    } catch (err) {
+      console.error(err);
+      alert("Gagal menghapus menu.");
+    }
+  };
+
+  /** 🔹 Open update dialog */
+  const handleEdit = (menu) => {
+    setSelectedMenu(menu);
+    setOpen(true);
+  };
+
+  /** 🔹 Close dialog */
+  const handleCloseDialog = () => {
+    setOpen(false);
+    setSelectedMenu(null);
+  };
 
   return (
     <Container maxWidth="lg" sx={{ mt: 4 }}>
@@ -55,19 +82,34 @@ export default function MenuListPage() {
         <Table>
           <TableHead>
             <TableRow>
-              <TableCell>ID</TableCell>
+              <TableCell>No.</TableCell>
               <TableCell>Name</TableCell>
               <TableCell>Category</TableCell>
               <TableCell>Price</TableCell>
+              <TableCell>Actions</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
-            {menus.map((menu) => (
+            {menus.map((menu, index) => (
               <TableRow key={menu.id}>
-                <TableCell>{menu.id}</TableCell>
+                <TableCell>{index + 1}</TableCell>
                 <TableCell>{menu.name}</TableCell>
                 <TableCell>{capitalizeFirst(menu.category)}</TableCell>
                 <TableCell>Rp {menu.price.toLocaleString()}</TableCell>
+                <TableCell>
+                  <IconButton
+                    color="primary"
+                    onClick={() => handleEdit(menu)}
+                  >
+                    <Edit />
+                  </IconButton>
+                  <IconButton
+                    color="error"
+                    onClick={() => handleDelete(menu.id)}
+                  >
+                    <Delete />
+                  </IconButton>
+                </TableCell>
               </TableRow>
             ))}
           </TableBody>
@@ -76,7 +118,8 @@ export default function MenuListPage() {
 
       <MenuFormDialog
         open={open}
-        onClose={() => setOpen(false)}
+        menu={selectedMenu} // pass selected menu untuk update
+        onClose={handleCloseDialog}
         onSuccess={fetchMenus}
       />
     </Container>
