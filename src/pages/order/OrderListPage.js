@@ -13,14 +13,25 @@ import {
   Button,
   Box,
 } from "@mui/material";
+import { useNavigate } from "react-router-dom";
+import { useContext } from "react";
+import { AuthContext } from "../../context/AuthContext";
 import axiosPrivate from "../../api/axiosPrivate";
+import PaymentDialog from "./PaymentDialog";
+
 
 export default function OrderListPage() {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Ambil data orders
+  const { user } = useContext(AuthContext);
+
+  const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
+  const [selectedOrder, setSelectedOrder] = useState(null);
+
+  const navigate = useNavigate();
+
   useEffect(() => {
     const fetchOrders = async () => {
       try {
@@ -33,9 +44,37 @@ export default function OrderListPage() {
         setLoading(false);
       }
     };
-
     fetchOrders();
   }, []);
+
+  const handleCloseOrPay = async (order) => {
+    try {
+      if (order.status === "closed") {
+        // open payment dialog
+        setSelectedOrder(order);
+        setPaymentDialogOpen(true);
+      } else {
+        // close order
+        await axiosPrivate.post("/orders/close", { order_id: order.id });
+        setOrders((prev) =>
+          prev.map((o) =>
+            o.id === order.id ? { ...o, status: "closed" } : o
+          )
+        );
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Gagal memproses order. Coba lagi.");
+    }
+  };
+
+  const handlePaymentSuccess = (orderId) => {
+    setOrders((prevOrders) =>
+      prevOrders.map((o) =>
+        o.id === orderId ? { ...o, status: "paid" } : o
+      )
+    );
+  };
 
   if (loading) {
     return (
@@ -64,9 +103,6 @@ export default function OrderListPage() {
         }}
       >
         <Typography variant="h6">Orders — List</Typography>
-        <Button variant="contained" color="primary">
-          Open New Order
-        </Button>
       </Box>
 
       <TableContainer component={Paper}>
@@ -90,37 +126,105 @@ export default function OrderListPage() {
                 </TableCell>
               </TableRow>
             ) : (
-              orders.map((order) => (
-                <TableRow key={order.id}>
-                  <TableCell>{order.id}</TableCell>
-                  <TableCell>{order.table_number || "-"}</TableCell>
-                  <TableCell>{order.items_count || 0}</TableCell>
-                  <TableCell>
-                    Rp{" "}
-                    {Number(order.total_price || 0).toLocaleString("id-ID")}
-                  </TableCell>
-                  <TableCell sx={{ textTransform: "capitalize" }}>
-                    {order.status || "pending"}
-                  </TableCell>
-                  <TableCell>
-                    {new Date(order.created_at).toLocaleString("id-ID")}
-                  </TableCell>
-                  <TableCell align="right">
-                    <Button
-                      size="small"
-                      variant="outlined"
-                      color="primary"
-                      href={`/orders/${order.id}`}
-                    >
-                      Detail
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))
+              orders.map((order, index) => {
+                const totalItems = order.items?.reduce(
+                  (sum, item) => sum + (item.quantity || 0),
+                  0
+                );
+
+                return (
+                  <TableRow key={order.id}>
+                    <TableCell>{index + 1}</TableCell>
+                    <TableCell>{order.table?.name || "-"}</TableCell>
+                    <TableCell>{totalItems}</TableCell>
+                    <TableCell>
+                      Rp {Number(order.total || 0).toLocaleString("id-ID")}
+                    </TableCell>
+                    <TableCell sx={{ textTransform: "capitalize" }}>
+                      {order.status || "pending"}
+                    </TableCell>
+                    <TableCell>
+                      {order.created_at
+                        ? new Date(order.created_at).toLocaleString("id-ID")
+                        : "-"}
+                    </TableCell>
+                    <TableCell align="right" sx={{ display: "flex", gap: 1 }}>
+                        <Button
+                          size="small"
+                          variant="outlined"
+                          color="primary"
+                          onClick={() => navigate(`/orders/${order.id}`)}
+                        >
+                          Detail
+                        </Button>                     
+
+                        {order.status === "open" && (
+                          <Button
+                            size="small"
+                            variant="outlined"
+                            color="secondary"
+                            onClick={() => handleCloseOrPay(order)}
+                          >
+                            Close Order
+                          </Button>
+                        )}                      
+
+                        {order.status === "closed"  && user?.role === "kasir" && (
+                          <Button
+                            size="small"
+                            variant="contained"
+                            color="success"
+                            onClick={() => handleCloseOrPay(order)}
+                          >
+                            Pay
+                          </Button>
+                        )}                      
+
+                        {order.status === "paid"  && user?.role === "kasir" && (
+                          <Button
+                            size="small"
+                            variant="contained"
+                            color="primary"
+                            onClick={async () => {
+                              try {
+                                const res = await axiosPrivate.get(
+                                  `/payments/${order.id}/receipt`,
+                                  { responseType: "blob" } // untuk file PDF
+                                );
+                                const url = window.URL.createObjectURL(new Blob([res.data]));
+                                const link = document.createElement("a");
+                                link.href = url;
+                                link.setAttribute(
+                                  "download",
+                                  `receipt_order_${order.id}.pdf`
+                                );
+                                document.body.appendChild(link);
+                                link.click();
+                                link.remove();
+                              } catch (err) {
+                                console.error(err);
+                                alert("Gagal mengunduh receipt");
+                              }
+                            }}
+                          >
+                            Generate Receipt
+                          </Button>
+                        )}
+                      </TableCell>
+                  </TableRow>
+                );
+              })
             )}
           </TableBody>
         </Table>
       </TableContainer>
+
+      <PaymentDialog
+        open={paymentDialogOpen}
+        onClose={() => setPaymentDialogOpen(false)}
+        order={selectedOrder}
+        onPaymentSuccess={handlePaymentSuccess}
+      />
     </Container>
   );
 }
